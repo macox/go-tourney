@@ -19,7 +19,7 @@ func main() {
 }
 
 func GetPlayers(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/tourney_db")
+	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
 	if err != nil {
 		panic(err)
 	}
@@ -62,7 +62,7 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(422)
 	}
 
-	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/tourney_db")
+	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
 
 	if err != nil {
 		panic(err)
