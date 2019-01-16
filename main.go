@@ -44,11 +44,8 @@ func GetPlayers(w http.ResponseWriter, r *http.Request) {
 		players = append(players, p)
 	}
 
-	response, _ := json.Marshal(players)
 	fmt.Printf("Responding with players\n")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(response)
+        respondWithJSON(w, http.StatusOK, players)
 }
 
 func AddPlayer(w http.ResponseWriter, r *http.Request) {
@@ -58,8 +55,7 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := decoder.Decode(&p); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(422)
+		respondWithError(w, 422, "Unprocessable Entity")
 	}
 
 	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
@@ -79,10 +75,7 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 
 	defer insert.Close()
 	
-	response, _ := json.Marshal(p)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(response)
+        respondWithJSON(w, http.StatusCreated, p)
 
 	fmt.Printf("Player added\n")
 }
@@ -95,4 +88,16 @@ type Player struct {
 
 type Players struct {
 	Players []Player
+}
+
+func respondWithError(w http.ResponseWriter, code int, message string) {
+    respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+    response, _ := json.Marshal(payload)
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(code)
+    w.Write(response)
 }
