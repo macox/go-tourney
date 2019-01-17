@@ -19,25 +19,13 @@ func main() {
 }
 
 func GetPlayers(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
-	if err != nil {
-		panic(err)
-	}
-
-	defer db.Close()
-
-	rows, err := db.Query("SELECT id, name, knickname FROM players")
-
-	if err != nil {
-		panic(err)
-	}
-
+	rows := queryDatabase("SELECT id, name, knickname FROM players")
 	defer rows.Close()
 
 	players := []Player{}
 	for rows.Next() {
 		var p Player
-		err = rows.Scan(&p.ID, &p.Name, &p.Knickname)
+		err := rows.Scan(&p.ID, &p.Name, &p.Knickname)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -45,7 +33,34 @@ func GetPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("Responding with players\n")
-        respondWithJSON(w, http.StatusOK, players)
+	respondWithJSON(w, http.StatusOK, players)
+}
+
+func dbConnection() *sql.DB {
+	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
+
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func queryDatabase(statement string) *sql.Rows {
+	db := dbConnection()
+	defer db.Close()
+
+	rows, err := db.Query(statement)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return rows
+}
+
+func insertDatabase(statement string) {
+	rows := queryDatabase(statement)
+	rows.Close()
 }
 
 func AddPlayer(w http.ResponseWriter, r *http.Request) {
@@ -58,24 +73,10 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 422, "Unprocessable Entity")
 	}
 
-	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer db.Close()
-	
 	statement := fmt.Sprintf("INSERT INTO players VALUES(%d, '%s', '%s')", p.ID, p.Name, p.Knickname)
-	insert, err := db.Query(statement)
+	insertDatabase(statement)
 
-	if err != nil {
-		panic(err)
-	}
-
-	defer insert.Close()
-	
-        respondWithJSON(w, http.StatusCreated, p)
+	respondWithJSON(w, http.StatusCreated, p)
 
 	fmt.Printf("Player added\n")
 }
@@ -91,13 +92,13 @@ type Players struct {
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
-    respondWithJSON(w, code, map[string]string{"error": message})
+	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-    response, _ := json.Marshal(payload)
+	response, _ := json.Marshal(payload)
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(code)
-    w.Write(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
