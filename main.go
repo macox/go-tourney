@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	db "go-tourney/persist"
+	"go-tourney/utils"
 )
 
 func main() {
@@ -33,7 +34,7 @@ func GetPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Printf("Responding with players\n")
-	respondWithJSON(w, http.StatusOK, players)
+	utils.RespondWithJSON(w, http.StatusOK, players)
 }
 
 func AddPlayer(w http.ResponseWriter, r *http.Request) {
@@ -43,13 +44,13 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := decoder.Decode(&p); err != nil {
-		respondWithError(w, 422, "Unprocessable Entity")
+		utils.RespondWithError(w, 422, "Unprocessable Entity")
 	}
 
 	statement := fmt.Sprintf("INSERT INTO players VALUES(%d, '%s', '%s')", p.ID, p.Name, p.Knickname)
 	db.InsertDatabase(statement)
 
-	respondWithJSON(w, http.StatusCreated, p)
+	utils.RespondWithJSON(w, http.StatusCreated, p)
 
 	fmt.Printf("Player added\n")
 }
@@ -62,16 +63,4 @@ type Player struct {
 
 type Players struct {
 	Players []Player
-}
-
-func respondWithError(w http.ResponseWriter, code int, message string) {
-	respondWithJSON(w, code, map[string]string{"error": message})
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
 }
