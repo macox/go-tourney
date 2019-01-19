@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -9,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	db "go-tourney/persist"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 }
 
 func GetPlayers(w http.ResponseWriter, r *http.Request) {
-	rows := queryDatabase("SELECT id, name, knickname FROM players")
+	rows := db.QueryDatabase("SELECT id, name, knickname FROM players")
 	defer rows.Close()
 
 	players := []Player{}
@@ -36,33 +36,6 @@ func GetPlayers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, players)
 }
 
-func dbConnection() *sql.DB {
-	db, err := sql.Open("mysql", "root:password@tcp(tourney-mysql:3306)/tourney_db")
-
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
-
-func queryDatabase(statement string) *sql.Rows {
-	db := dbConnection()
-	defer db.Close()
-
-	rows, err := db.Query(statement)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return rows
-}
-
-func insertDatabase(statement string) {
-	rows := queryDatabase(statement)
-	rows.Close()
-}
-
 func AddPlayer(w http.ResponseWriter, r *http.Request) {
 	var p Player
 	decoder := json.NewDecoder(r.Body)
@@ -74,7 +47,7 @@ func AddPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	statement := fmt.Sprintf("INSERT INTO players VALUES(%d, '%s', '%s')", p.ID, p.Name, p.Knickname)
-	insertDatabase(statement)
+	db.InsertDatabase(statement)
 
 	respondWithJSON(w, http.StatusCreated, p)
 
