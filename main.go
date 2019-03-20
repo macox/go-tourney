@@ -7,12 +7,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	db "go-tourney/persist"
 	"go-tourney/utils"
+	"github.com/gorilla/mux"
 )
 
 func main() {
+        db.InitDb()
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/players", GetPlayers).Methods("GET")
 	router.HandleFunc("/players", AddPlayer).Methods("POST")
