@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tourney-mysql
+  labels:
+    app: go-tourney
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: go-tourney
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: go-tourney
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: tourney-mysql
+  labels:
+    app: go-tourney
+spec:
+  selector:
+    matchLabels:
+      app: go-tourney
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: go-tourney
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:8.0.13
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+
